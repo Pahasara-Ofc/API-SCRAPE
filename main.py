@@ -1,45 +1,36 @@
-from fastapi import FastAPI, HTTPException
-import yt_dlp
+import requests
+from bs4 import BeautifulSoup
 
-app = FastAPI()
+def scrape_col3neg_video(url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print("සයිට් එකට ඇතුල් වෙන්න බැහැ!")
+        return None
 
-@app.get("/")
-def home():
-    return {"status": "Online", "message": "Queen Nelumi YouTube API is running!"}
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-@app.get("/api/download")
-def download(url: str):
-    if not url:
-        raise HTTPException(status_code=400, detail="URL එකක් දීපම් රත්තරං!")
-
-    # YouTube බ්ලොක් නොවී දත්ත ගන්න අවශ්‍ය Settings
-    ydl_opts = {
-        'format': 'best', # MP3 සහ MP4 දෙකටම හරියන හොඳම කොලිටිය
-        'quiet': True,
-        'no_warnings': True,
-        'nocheckcertificate': True,
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['android', 'ios'], # මේකෙන් බ්ලොක් වෙන එක ගොඩක් අඩුවෙනවා
-            }
-        },
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+    # Data extraction (සයිට් එකේ HTML structure එක අනුව වෙනස් විය හැක)
+    details = {
+        "Title": soup.find('h1').text.strip() if soup.find('h1') else "N/A",
+        "Thumbnail": soup.find('meta', property="og:image")['content'] if soup.find('meta', property="og:image") else "N/A",
+        "Views": "Scrape from page element", # මෙතන views තියෙන HTML tag එක දාන්න
+        "Duration": "Scrape from page element", # Duration එක තියෙන තැන
+        "Info": soup.find('div', class_='video-details').text.strip() if soup.find('div', class_='video-details') else "No Info",
     }
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # වීඩියෝ එකේ තොරතුරු Extract කිරීම
-            info = ydl.extract_info(url, download=False)
-            
-            # Download URL එක සහ නම මෙතනින් ලැබෙනවා
-            return {
-                "status": "success",
-                "title": info.get('title'),
-                "download_url": info.get('url'),
-                "thumbnail": info.get('thumbnail'),
-                "duration": info.get('duration_string'),
-                "author": info.get('uploader')
-            }
-    except Exception as e:
-        # Error එකක් ආවොත් ඒක පෙන්වනවා
-        raise HTTPException(status_code=500, detail=str(e))
+    # Quality Links (මේක ගොඩක් වෙලාවට iframe එකක් ඇතුලේ තියෙන්නේ)
+    # Download links වලට වෙනම logic එකක් ලියන්න වෙනවා
+    qualities = ["360p", "480p", "720p", "1080p"]
+    
+    print("--- Video Details ---")
+    for key, value in details.items():
+        print(f"{key}: {value}")
+        
+    return details
+
+# උදාහරණයක් ලෙස
+# scrape_col3neg_video("https://col3neg.com/video-url-here")
