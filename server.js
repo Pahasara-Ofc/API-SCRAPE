@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/api/mediafire", async (req, res) => {
+app.get("/api/youtube", async (req, res) => {
   const { url } = req.query;
 
   if (!url) {
